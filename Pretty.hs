@@ -1413,10 +1413,10 @@ hashParenList = hashParens . myFsepSimple . punctuate comma
         hashes = \doc -> char '#' <> doc <> char '#'
 
 braceList :: [Doc] -> Doc
-braceList = braces . myFsepSimple . punctuate comma
+braceList = braces . hsep . punctuate comma
 
 bracketList :: [Doc] -> Doc
-bracketList = brackets . myFsepSimple
+bracketList = brackets . hsep
 
 -- Wrap in braces and semicolons, with an extra space at the start in
 -- case the first doc begins with "-", which would be scanned as {-

@@ -14,6 +14,9 @@ import Data.Maybe
 import GraphUtils
 import Data.Char
 import qualified Data.IntMap as IMap
+import Text.RegexPR
+import Debug.Trace
+import Numeric
 
 type Exp_ = Exp
 pprint tm = "<pre>" ++ P.prettyPrint tm ++ "</pre>"
@@ -34,6 +37,14 @@ assignSCC m = evalState (transformBiM f m) 0 where
         put (st+1)
         return $ par $ scc (show st) e
 
+addColor m s = trace s $ gsubRegexPRBy "color: #.*?\">" (\str -> take 8 str ++ g str) s where
+    g str =  (maybe "00ffffff" toColor $ lookup (fst $ f str) m) ++ (snd $ f str)
+    f str = head $ reads $ drop 8 str :: (Int, String)
+
+toColor :: Float -> String
+toColor fl | fl < 0.01 = "00ffffff"
+           | otherwise = "ff" ++ (showHex (truncate $ fl * 255) "") ++ "00"
+
 parseModuleFromFile path = fromParseResult <$> parseFile path
 
 snd3 (_,x,_) = x
@@ -50,4 +61,6 @@ main = do
     let totalTicks = profileTicks prof
     let graph = profileGraph prof
     let ticksMap = map (\n -> (read $ nodeName n :: Int, (fromInteger $ snd3 $ totalCost $ parentNodes n) / (fromInteger totalTicks))) $ filter (isNumber . head . nodeName) $ IMap.elems graph
-    writeFile "test.html" $ pprint tm
+    putStr $ show $ ticksMap
+    let html = addColor ticksMap $ pprint tm
+    writeFile "test.html" html
