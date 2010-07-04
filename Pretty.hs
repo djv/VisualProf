@@ -1456,7 +1456,7 @@ ppBody f dl = do
 a $$$ b = layoutChoice (a $$) (a <+>) b
 
 mySep :: [Doc] -> Doc
-mySep = layoutChoice mySep' hsep
+mySep = hsep--layoutChoice mySep' hsep
         where
         -- ensure paragraph fills with indentation.
         mySep' [x]    = x
@@ -1467,7 +1467,7 @@ myVcat :: [Doc] -> Doc
 myVcat = layoutChoice vcat hsep
 
 myFsepSimple :: [Doc] -> Doc
-myFsepSimple = layoutChoice fsep hsep
+myFsepSimple = hsep--layoutChoice fsep hsep
 
 -- same, except that continuation lines are indented,
 -- which is necessary to avoid triggering the offside rule.
