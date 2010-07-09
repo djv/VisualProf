@@ -5,12 +5,14 @@ import Data.Generics.Uniplate.Data
 import Control.Monad.State
 import Control.Applicative
 import Control.Arrow
+import qualified Control.Exception as Exc
 import qualified Pretty as P
 import qualified Language.Haskell.Exts.Pretty as PP
 import ParseProfile
 import System.Process
 import System.Directory
 import System.Environment
+import System.IO.Error
 import Data.Maybe
 import GraphUtils
 import Data.Char
@@ -55,12 +57,13 @@ transparentColour = "00ffffff"
 --TODO extract constants
 toColour :: Float -> String
 toColour fl | 0 <= fl && fl < 0.01 = transparentColour --ignore these values
-            | 0.01 <= fl && fl < 0.25 = (pad $ showHex (truncate $ fl * 1024) "") ++ "ff00" --green to yellow
-            | 0.25 <= fl && fl <= 1 = "ff" ++ (pad $ showHex (255 - (truncate $ (fl - 0.25) * 340)) "") ++ "00" --yellow to red
+            | 0.01 <= fl && fl < yellow = (pad $ showHex (truncate $ fl * 255 * (1/yellow)) "") ++ "ff00" --green to yellow
+            | yellow <= fl && fl <= 1 = "ff" ++ (pad $ showHex (255 - (truncate $ (fl - yellow) * 255 / (1-yellow))) "") ++ "00" --yellow to red
     where   
     --pad with 0 a hex number in [0,255]
     pad :: String -> String
     pad str = if length str == 1 then "0" ++ str else str
+    yellow = 0.1
 
 parseModuleFromFile :: FilePath -> IO Module
 parseModuleFromFile path = fromParseResult <$> parseFile path
@@ -93,40 +96,43 @@ main = do
     --TODO use getOpts
     args <- getArgs
     let mode = args !! 0
-    when (not (isPrefixOf "-h" mode || mode == "-px")) (error "mode should be -h or -px")
+    when (not (isPrefixOf "-h" mode || isPrefixOf "-px" mode)) (error "mode should be -h or -px")
     let file = args !! 1
     let run = args !! 2
     let programArgs = ind args 3
     let inpFile = ind args 4
     
-    --copy the original file
     let bak = file ++ ".bak"
-    removeFile bak
-    renameFile file bak
+    (do
+        --copy the original file
+        removeFile bak `catch` (\e -> if isDoesNotExistError e then return () else ioError e)
+        renameFile file bak
 
-    putStrLn "started parsing original file"
-    m <- parseModuleFromFile bak
-    let tm = assignSCC m
+        putStrLn "started parsing original file"
+        m <- parseModuleFromFile bak
+        let tm = assignSCC m
 
-    putStrLn "writing modified file"
-    writeFile file $ PP.prettyPrint tm
+        putStrLn "writing modified file"
+        writeFile file $ PP.prettyPrint tm
 
-    let buildStr = "ghc -prof -fforce-recomp -O2 --make " ++ run ++ ".hs && ./" ++ run ++ " +RTS " ++ mode ++ " -RTS"
-    let buildStrArgs = buildStr ++ " " ++ fromMaybe "" programArgs ++ " "
-    let buildStrInp = maybe buildStrArgs ((buildStrArgs ++ " < ") ++ ) inpFile
-    putStrLn buildStrInp
-    buildCommand <- runCommand $ buildStrInp
-    waitForProcess buildCommand
+        let buildStr = "ghc -prof -O2 --make " ++ run ++ ".hs && ./" ++ run ++ " +RTS " ++ mode ++ " -RTS"
+        let buildStrArgs = buildStr ++ " " ++ fromMaybe "" programArgs ++ " "
+        let buildStrInp = maybe buildStrArgs ((buildStrArgs ++ " < ") ++ ) inpFile
+        putStrLn buildStrInp
+        buildCommand <- runCommand $ buildStrInp
+        waitForProcess buildCommand
 
-    putStrLn "parsing profiling results"
-    profFile <- readFile $ run ++ ".prof"
-    --TODO handle Maybe
-    let prof = fromJust $ parseProfile (run ++ ".prof") profFile
-    let profMap = compute prof where
-        compute = if isPrefixOf "-h" mode then computeAllocMap else computeTicksMap
+        if isPrefixOf "-px" mode
+           then
+           do
+                putStrLn "parsing profiling results"
+                profFile <- readFile $ run ++ ".prof"
+                --TODO handle Maybe
+                let prof = fromJust $ parseProfile (run ++ ".prof") profFile
+                let profMap = computeTicksMap prof
 
-    putStrLn "printing output html file"
-    let html = addColour profMap $ pprint tm
-    writeFile (file ++ ".html") html
-    renameFile file (file ++ ".scc")
-    copyFile bak file
+                putStrLn "printing output html file"
+                let html = addColour profMap $ pprint tm
+                writeFile (file ++ ".html") html
+            else return ()
+        renameFile file (file ++ ".scc")) `Exc.finally` (do {copyFile bak file; removeFile bak})

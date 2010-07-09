@@ -1448,7 +1448,7 @@ ppBody f dl = do
                    PPSemiColon   -> indentExplicit
                    _ -> flatBlock dl
                    where
-                   indent  = do{i <-fmap f getPPEnv;nest i . vcat $ dl}
+                   indent  = do{i <-fmap f getPPEnv;vcat $ dl}
                    indentExplicit = do {i <- fmap f getPPEnv;
                            nest i . prettyBlock $ dl}
 
