@@ -152,6 +152,8 @@ text, ptext :: String -> Doc
 text = return . P.text
 ptext = return . P.text
 
+zeroWidthText = return . P.zeroWidthText
+
 char :: Char -> Doc
 char = return . P.char
 
@@ -841,7 +843,7 @@ instance Pretty Exp where
                 myFsep $ [text "<%", pretty e, text "%>"]
         -- Pragmas
         prettyPrec p (CorePragma s e) = myFsep $ map text ["{-# CORE", show s, "#-}"] ++ [pretty e]
-        prettyPrec p (SCCPragma  s e) = text "<font style=\"background-color: #" <> text s <> text "\">" <> pretty e <> text "</font>"
+        prettyPrec _ (SCCPragma  s e) = zeroWidthText "<font style=\"background-color: #" <> zeroWidthText s <> zeroWidthText "\">" <> pretty e <> zeroWidthText "</font>"
         prettyPrec _ (GenPragma  s (a,b) (c,d) e) =
                 myFsep $ [text "{-# GENERATED", text $ show s,
                             int a, char ':', int b, char '-',
@@ -1413,10 +1415,10 @@ hashParenList = hashParens . myFsepSimple . punctuate comma
         hashes = \doc -> char '#' <> doc <> char '#'
 
 braceList :: [Doc] -> Doc
-braceList = braces . hsep . punctuate comma
+braceList = braces . myFsepSimple . punctuate comma
 
 bracketList :: [Doc] -> Doc
-bracketList = brackets . hsep
+bracketList = brackets . myFsepSimple
 
 -- Wrap in braces and semicolons, with an extra space at the start in
 -- case the first doc begins with "-", which would be scanned as {-
@@ -1448,7 +1450,7 @@ ppBody f dl = do
                    PPSemiColon   -> indentExplicit
                    _ -> flatBlock dl
                    where
-                   indent  = do{i <-fmap f getPPEnv;vcat $ dl}
+                   indent  = do{i <-fmap f getPPEnv;nest i . vcat $ dl}
                    indentExplicit = do {i <- fmap f getPPEnv;
                            nest i . prettyBlock $ dl}
 
@@ -1456,7 +1458,7 @@ ppBody f dl = do
 a $$$ b = layoutChoice (a $$) (a <+>) b
 
 mySep :: [Doc] -> Doc
-mySep = hsep--layoutChoice mySep' hsep
+mySep = layoutChoice mySep' hsep
         where
         -- ensure paragraph fills with indentation.
         mySep' [x]    = x
@@ -1467,17 +1469,25 @@ myVcat :: [Doc] -> Doc
 myVcat = layoutChoice vcat hsep
 
 myFsepSimple :: [Doc] -> Doc
-myFsepSimple = hsep--layoutChoice fsep hsep
+myFsepSimple = layoutChoice fsep hsep
 
 -- same, except that continuation lines are indented,
 -- which is necessary to avoid triggering the offside rule.
 myFsep :: [Doc] -> Doc
-myFsep = hsep {-layoutChoice fsep' hsep
+myFsep = layoutChoice fsep' hsep
         where   fsep' [] = empty
                 fsep' (d:ds) = do
                         e <- getPPEnv
                         let n = onsideIndent e
-                        nest n (fsep (nest (-n) d:ds)) -}
+                        nest n (fsep (nest (-n) d:ds))
+
+myFsepSCC :: [Doc] -> Doc
+myFsepSCC = layoutChoice fsep' hsep
+        where   fsep' [] = empty
+                fsep' (d:ds) = do
+                        e <- getPPEnv
+                        let n = onsideIndent e
+                        nest n (fsep (nest (-n) d:ds))
 
 layoutChoice :: (a -> Doc) -> (a -> Doc) -> a -> Doc
 layoutChoice a b dl = do e <- getPPEnv
@@ -1498,4 +1508,3 @@ markLine loc doc = do
               text ("{-# LINE " ++ show l ++ " \"" ++ fileName loc ++ "\" #-}")
         if linePragmas e then layoutChoice (line y $$) (line (y+1) <+>) doc
               else doc
-
