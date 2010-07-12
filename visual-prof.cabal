@@ -1,0 +1,37 @@
+Name:                   visual-prof
+Version:                0.1
+Cabal-Version:		    >= 1.2
+License:                BSD3
+License-file:           LICENSE
+Author:                 Daniel Velkov
+Synopsis:               Create a visual profile of a program's source code showing which parts of it take most of the running time
+Description:
+    visual-prof profiles your Haskell program and generates a html file containing
+    its source code with parts of the code highlighted in different
+    colors depending on the fraction of the running time that they take.
+    visual-prof gives you an easy way to find places for optimization in your code.
+    .
+    Usage:
+    .
+    > visual-prof -px A/B/C.hs run "arg1 arg2"
+    .
+    This will profile the C.hs file used by run.hs which contains the Main module
+    of your project. Arguments to ./run are passed as shown (arg1, arg2,...). The parameters
+    should be given in that order.
+
+Maintainer:		        djvelkov@gmail.com
+Category:               Development
+Build-Type:		        Simple
+
+Flag splitBase
+  description: Choose the new smaller, split-up base package.
+
+Executable             visual-prof
+  if flag(splitBase)
+    Build-Depends: base >= 3 && < 4, containers
+  else
+    Build-Depends: base < 3
+  Build-depends: parsec, filepath, haskell-src-exts, regexpr, directory, process, pretty, mtl, uniplate
+
+  Main-is:                Prof2Html.hs
+  Other-modules:          GraphUtils ParseProfile Pretty

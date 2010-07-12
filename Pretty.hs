@@ -249,12 +249,12 @@ prettyPrintStyleMode :: Pretty a => P.Style -> PPHsMode -> a -> String
 prettyPrintStyleMode ppStyle ppMode = renderStyleMode ppStyle ppMode . pretty
 
 -- | pretty-print with the default style and a given mode.
-prettyPrintWithMode :: Pretty a => PPHsMode -> a -> String
-prettyPrintWithMode = prettyPrintStyleMode P.style
+prettyPrintWithMode :: Pretty a => PPHsMode -> Int -> a -> String
+prettyPrintWithMode mode lineLength = prettyPrintStyleMode P.style{P.lineLength = lineLength} mode
 
 -- | pretty-print with the default style and 'defaultMode'.
-prettyPrint :: Pretty a => a -> String
-prettyPrint = prettyPrintWithMode defaultMode
+prettyPrint :: Pretty a => Int -> a -> String
+prettyPrint lineLength = prettyPrintWithMode defaultMode lineLength
 
 fullRenderWithMode :: PPHsMode -> P.Mode -> Int -> Float ->
                       (P.TextDetails -> a -> a) -> a -> Doc -> a
@@ -843,7 +843,7 @@ instance Pretty Exp where
                 myFsep $ [text "<%", pretty e, text "%>"]
         -- Pragmas
         prettyPrec p (CorePragma s e) = myFsep $ map text ["{-# CORE", show s, "#-}"] ++ [pretty e]
-        prettyPrec _ (SCCPragma  s e) = zeroWidthText "<font style=\"background-color: #" <> zeroWidthText s <> zeroWidthText "\">" <> pretty e <> zeroWidthText "</font>"
+        prettyPrec _ (SCCPragma  s e) = zeroWidthText "<a class=info href=\"#\"><span>" <> zeroWidthText s <> zeroWidthText "</span><font style=\"background-color: #" <> zeroWidthText s <> zeroWidthText "\">" <> pretty e <> zeroWidthText "</font></a>"
         prettyPrec _ (GenPragma  s (a,b) (c,d) e) =
                 myFsep $ [text "{-# GENERATED", text $ show s,
                             int a, char ':', int b, char '-',
