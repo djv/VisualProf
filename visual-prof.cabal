@@ -4,6 +4,7 @@ Cabal-Version:		    >= 1.2
 License:                BSD3
 License-file:           LICENSE
 Author:                 Daniel Velkov
+Homepage:               http://github.com/djv/VisualProf
 Synopsis:               Create a visual profile of a program's source code showing which parts of it take most of the running time
 Description:
     visual-prof profiles your Haskell program and generates a html file containing
