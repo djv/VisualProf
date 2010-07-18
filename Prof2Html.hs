@@ -28,14 +28,19 @@ pprint tm
       ++ P.prettyPrint 120 tm ++ "</pre>"
  
 assignSCC :: Module -> Module
-assignSCC m = evalState (transformBiM f m) 0
-  where f e
-          = do st <- get
-               put (st + 1)
-               return $ Paren $ SCCPragma (show st) $ strip e
-        strip :: Exp_ -> Exp_
-        strip (SCCPragma _ e) = e
-        strip e = e
+assignSCC m = evalState (transformBiM f m) 0 where
+    f e = do st <- get
+             put (st + 1)
+             return $ addSCC st $ strip e
+
+    strip :: Exp_ -> Exp_
+    strip (SCCPragma _ e) = e
+    strip e = e
+
+    addSCC :: Int -> Exp_ -> Exp_
+    addSCC _ e@(Var _) = e
+    addSCC _ e@(Lit _) = e
+    addSCC num e = Paren $ SCCPragma (show num) e
          
 addColour m s
   = gsubRegexPRBy (pref ++ ".*?" ++ suf)

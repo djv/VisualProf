@@ -5,7 +5,7 @@ License:                BSD3
 License-file:           LICENSE
 Author:                 Daniel Velkov
 Homepage:               http://github.com/djv/VisualProf
-Synopsis:               Create a visual profile of a program's source code showing which parts of it take most of the running time
+Synopsis:               Create a visual profile of a program's source code
 Description:
     visual-prof profiles your Haskell program and generates a html file containing
     its source code with parts of the code highlighted in different
