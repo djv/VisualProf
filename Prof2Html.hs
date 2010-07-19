@@ -13,6 +13,7 @@ import System.Process
 import System.Directory
 import System.Environment
 import System.IO.Error
+import System.IO
 import Data.Maybe
 import GraphUtils
 import Data.Char
@@ -28,20 +29,20 @@ pprint tm
       ++ P.prettyPrint 120 tm ++ "</pre>"
  
 assignSCC :: Module -> Module
-assignSCC m = evalState (transformBiM f m) 0 where
-    f e = do st <- get
-             put (st + 1)
-             return $ addSCC st $ strip e
-
-    strip :: Exp_ -> Exp_
-    strip (SCCPragma _ e) = e
-    strip e = e
-
-    addSCC :: Int -> Exp_ -> Exp_
-    addSCC _ e@(Var _) = e
-    addSCC _ e@(Lit _) = e
-    addSCC num e = Paren $ SCCPragma (show num) e
+assignSCC m = evalState (transformBiM f m) 0
+  where f e
+          = do st <- get
+               put (st + 1)
+               return $ addSCC st $ strip e
          
+        strip :: Exp_ -> Exp_
+        strip (SCCPragma _ e) = e
+        strip e = e
+         
+        addSCC :: Int -> Exp_ -> Exp_
+        addSCC _ e@(Var _) = e
+        addSCC _ e@(Lit _) = e
+        addSCC num e = Paren $ SCCPragma (show num) e
 addColour m s
   = gsubRegexPRBy (pref ++ ".*?" ++ suf)
       (\ str -> pref ++ sccNumToColour str ++ suf)
@@ -69,7 +70,7 @@ toColour fl
         ++ "00"
   where  
         pad :: String -> String
-        pad str = if length str == 1 then '0':str else str
+        pad str = if length str == 1 then '0' : str else str
         yellow = 0.1
  
 parseModuleFromFile :: FilePath -> IO Module
@@ -105,15 +106,25 @@ snd3 (_, x, _) = x
 trd3 :: (Integer, Integer, Integer) -> Integer
 trd3 (_, _, x) = x
 ind l n = if length l > n then Just $ l !! n else Nothing
+outputHTML file run tm
+  = do putStrLn "parsing profiling results"
+       profFile <- readFile $ run ++ ".prof"
+       let prof = fromJust $ parseProfile (run ++ ".prof") profFile
+       when (profileTicks prof == 0)
+         (error "the program has to run longer to get enough information")
+       let profMap = computeTicksMap prof
+       putStrLn "printing output html file"
+       let html = addColour profMap $ pprint tm
+       writeFile (file ++ ".html") html
  
 main :: IO ()
 main
   = do args <- getArgs
        let mode = args !! 0
-       unless ("-h" `isPrefixOf` mode || "-px" `isPrefixOf` mode)
-         (error "mode should be -h or -px")
        let file = args !! 1
        let run = args !! 2
+       unless ("-h" `isPrefixOf` mode || "-px" `isPrefixOf` mode)
+         (error "mode should be -h or -px")
        let programArgs = ind args 3
        let inpFile = ind args 4
        let bak = file ++ ".bak"
@@ -125,24 +136,21 @@ main
            let tm = assignSCC m
            putStrLn "writing modified file"
            writeFile file $ PP.prettyPrint tm
-           let buildStr
-                 = "ghc -prof -O2 --make " ++
-                     run ++ ".hs && ./" ++ run ++ " +RTS " ++ mode ++ " -RTS"
-           let buildStrArgs
-                 = buildStr ++ " " ++ fromMaybe "" programArgs ++ " "
-           let buildStrInp
-                 = maybe buildStrArgs ((buildStrArgs ++ " < ") ++) inpFile
-           putStrLn buildStrInp
-           buildCommand <- runCommand buildStrInp
+
+           let buildStr = "ghc -prof -O2 --make " ++ run ++ ".hs"
+           putStrLn buildStr
+           buildCommand <- runCommand buildStr
            waitForProcess buildCommand
-           (when ("-px" `isPrefixOf` mode) $
-              do putStrLn "parsing profiling results"
-                 profFile <- readFile $ run ++ ".prof"
-                 let prof = fromJust $ parseProfile (run ++ ".prof") profFile
-                 let profMap = computeTicksMap prof
-                 putStrLn "printing output html file"
-                 let html = addColour profMap $ pprint tm
-                 writeFile (file ++ ".html") html)
+
+           let runRTS = ["+RTS", mode, "-RTS"]
+           let runArgs = runRTS ++ maybe [] words programArgs
+           inp <- maybe (return Inherit)
+                    (\file -> UseHandle <$> openFile file ReadMode) inpFile
+           putStrLn $ run ++ " " ++ unwords runArgs
+           (_,_,_,runCommand) <- createProcess (proc ("./" ++ run) runArgs){std_in = inp}
+           waitForProcess runCommand
+
+           (when ("-px" `isPrefixOf` mode) (outputHTML file run tm))
            renameFile file (file ++ ".scc"))
          `Exc.finally`
          (do copyFile bak file
