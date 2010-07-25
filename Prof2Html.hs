@@ -12,6 +12,7 @@ import ParseProfile
 import System.Process
 import System.Directory
 import System.Environment
+import System.FilePath
 import System.IO.Error
 import System.IO
 import Data.Maybe
@@ -108,8 +109,8 @@ trd3 (_, _, x) = x
 ind l n = if length l > n then Just $ l !! n else Nothing
 outputHTML file run tm
   = do putStrLn "parsing profiling results"
-       profFile <- readFile $ run ++ ".prof"
-       let prof = fromJust $ parseProfile (run ++ ".prof") profFile
+       profFile <- readFile $ profName
+       let prof = fromJust $ parseProfile profName profFile
        when (profileTicks prof == 0)
          (error "the program has to run longer to get enough information")
        let profMap = computeTicksMap prof
@@ -128,8 +129,9 @@ main
        let programArgs = ind args 3
        let inpFile = ind args 4
        let bak = file ++ ".bak"
+       let profName = (takeBaseName run) ++ ".prof"
        (do removeFile bak `catch`
-             (\ e -> if isDoesNotExistError e then return () else ioError e)
+             (\ e -> unless (isDoesNotExistError e) $ ioError e)
            renameFile file bak
            putStrLn "started parsing original file"
            m <- parseModuleFromFile bak
