@@ -107,7 +107,7 @@ snd3 (_, x, _) = x
 trd3 :: (Integer, Integer, Integer) -> Integer
 trd3 (_, _, x) = x
 ind l n = if length l > n then Just $ l !! n else Nothing
-outputHTML file run tm
+outputHTML file profName tm
   = do putStrLn "parsing profiling results"
        profFile <- readFile $ profName
        let prof = fromJust $ parseProfile profName profFile
@@ -139,7 +139,7 @@ main
            putStrLn "writing modified file"
            writeFile file $ PP.prettyPrint tm
 
-           let buildStr = "ghc -prof -O2 --make " ++ run ++ ".hs"
+           let buildStr = "ghc -prof -rtsopts -O2 --make " ++ run ++ ".hs"
            putStrLn buildStr
            buildCommand <- runCommand buildStr
            waitForProcess buildCommand
@@ -152,7 +152,7 @@ main
            (_,_,_,runCommand) <- createProcess (proc ("./" ++ run) runArgs){std_in = inp}
            waitForProcess runCommand
 
-           (when ("-px" `isPrefixOf` mode) (outputHTML file run tm))
+           (when ("-px" `isPrefixOf` mode) (outputHTML file profName tm))
            renameFile file (file ++ ".scc"))
          `Exc.finally`
          (do copyFile bak file
