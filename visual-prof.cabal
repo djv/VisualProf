@@ -29,7 +29,7 @@ Flag splitBase
 
 Executable             visual-prof
   if flag(splitBase)
-    Build-Depends: base >= 3 && < 4, containers
+    Build-Depends: base >= 3 && < 5, containers
   else
     Build-Depends: base < 3
   Build-depends: parsec, filepath, haskell-src-exts, regexpr, directory, process, pretty, mtl, uniplate
