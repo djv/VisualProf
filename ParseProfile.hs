@@ -390,7 +390,7 @@ markParents g = let
         markAsParent :: ProfileGraph -> NodeCode -> ProfileGraph
         markAsParent gr n = update (\n' -> Just n' { isLeaf = False }) n gr
         in
-          foldl markAsParent g' nonLeaf
+          List.foldl markAsParent g' nonLeaf
 
 
 -- Convert the raw CostCenter, CostCenterStack and CostCenterReport
