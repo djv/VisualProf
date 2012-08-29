@@ -23,11 +23,11 @@ totalCost :: [ CallInfo ] -> (Integer, Integer, Integer)
 totalCost cis = let
          cis' = nubBy (\x y -> stackNumber x == stackNumber y) cis
          in
-           foldl (\(c, t, a) ci -> (c + counts ci, t + ticks ci, a + allocs ci)) (0, 0, 0) cis'
+           List.foldl (\(c, t, a) ci -> (c + counts ci, t + ticks ci, a + allocs ci)) (0, 0, 0) cis'
 
 
 collapseCost :: [ CallInfo ] -> CallInfo
-collapseCost = foldl (\ci ci' -> ci { parentNodeNumber = parentNodeNumber ci',
+collapseCost = List.foldl (\ci ci' -> ci { parentNodeNumber = parentNodeNumber ci',
                                       stackNumber      = stackNumber ci',
                                       counts           = counts ci + counts ci',
                                       ticks            = ticks  ci + ticks ci',
@@ -54,7 +54,7 @@ pruneOnce g = let
         pruneNode (i, g') nc = if prunable (g' ! nc)
                                   then (i + 1, IntMap.delete nc g')
                                   else (i, g')
-        (nChanges, g'') = foldl pruneNode (0, g) (keys g)
+        (nChanges, g'') = List.foldl pruneNode (0, g) (keys g)
         in
           (nChanges, markParents g'')
 
