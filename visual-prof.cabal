@@ -32,7 +32,7 @@ Executable             visual-prof
     Build-Depends: base >= 3 && < 5, containers
   else
     Build-Depends: base < 3
-  Build-depends: parsec, filepath, haskell-src-exts, regexpr, directory, process, pretty, mtl, uniplate
+  Build-depends: parsec, filepath, haskell-src-exts, regexpr, directory, process, pretty, mtl, uniplate, split
 
   Main-is:                Prof2Html.hs
-  Other-modules:          GraphUtils ParseProfile Pretty
+  Other-modules:          Pretty

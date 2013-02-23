@@ -5,7 +5,7 @@
 -- the result string instead of printing it. For some
 -- reason, this gives a speedup.
 
-import System
+import System.Environment
 
 pidgits n = 0 % (0 # (1,0,1)) where
  i%ds
