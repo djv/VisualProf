@@ -1,5 +1,5 @@
 Name:                   visual-prof
-Version:                0.1
+Version:                0.3
 Cabal-Version:		    >= 1.2
 License:                BSD3
 License-file:           LICENSE
@@ -19,6 +19,12 @@ Description:
     This will profile the C.hs file used by run.hs which contains the Main module
     of your project. Arguments to ./run are passed as shown (arg1, arg2,...). The parameters
     should be given in that order.
+    .
+    The simplest way to run it is:
+    .
+    > visual-prof -px test.hs test
+    .
+    which will generate a profile for the file test.hs (which needs to have a main function)
 
 Maintainer:		        djvelkov@gmail.com
 Category:               Development
