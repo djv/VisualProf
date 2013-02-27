@@ -21,7 +21,7 @@ import qualified Data.IntMap as IMap
 import Text.RegexPR
 import Numeric
 import Data.List
- 
+
 type Exp_ = Exp
 pprint tm
   = "<style> a.info{    position:relative;    z-index:24;    color:#000;    text-decoration:none}  a.info:hover{z-index:25;} a.info span{display: none} a.info:hover span{ /*the span will display just on :hover state*/    display:block;    position:absolute;    top:2em; left:2em; width:15em;    border:1px solid #0cf;    background-color:#cff; color:#000;    text-align: center} </style><pre>"
@@ -80,9 +80,7 @@ ind l n = if length l > n then Just $ l !! n else Nothing
 outputHTML file profName tm
   = do putStrLn "parsing profiling results"
        profFile <- lines <$> readFile profName
-       let prof = map (wordsBy (==' ')) $ takeWhile (/="") $ drop 9 profFile
-       {-when (profileTicks prof == 0)-}
-         {-(error "the program has to run longer to get enough information")-}
+       let prof = filter ((all isDigit) . head) $ map (wordsBy (==' ')) $ takeWhile (/="") $ drop 9 profFile
        let profMap = IMap.fromList $ zip (map (read . (!!0)) prof) (map ((/100) . read . (!!2)) prof)
        putStrLn "printing output html file"
        let html = addColour profMap $ pprint tm
@@ -100,7 +98,7 @@ main
        let inpFile = ind args 4
        let bak = file ++ ".bak"
        let profName = takeBaseName run ++ ".prof"
-       (do removeFile bak `catch`
+       (do removeFile bak `Exc.catch`
              (\ e -> unless (isDoesNotExistError e) $ ioError e)
            renameFile file bak
            putStrLn "started parsing original file"
