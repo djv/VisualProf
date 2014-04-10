@@ -27,7 +27,7 @@ Description:
     which will generate a profile for the file test.hs (which needs to have a main function)
 
 Maintainer:		        djvelkov@gmail.com
-Category:               Development
+Category:               Development, Profiling
 Build-Type:		        Simple
 
 Flag splitBase
