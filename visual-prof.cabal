@@ -40,5 +40,6 @@ Executable             visual-prof
     Build-Depends: base < 3
   Build-depends: filepath, haskell-src-exts==1.13.5, regexpr, directory, process, pretty, mtl, uniplate, split
 
-  Main-is:                Prof2Html.hs
+  Main-is:                Main.hs
   Other-modules:          Pretty
+  hs-source-dirs:	  src
